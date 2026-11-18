@@ -28,6 +28,7 @@ interface SearchClient extends grpc.Client {
 
 const SAMPLE_QUERIES = ['aar', 'chen', 'maha', 'rohan', 'del'];
 const ITERATIONS = 100;
+const RESPONSE_TIME_TARGET_MS = 100;
 
 function createClient(): SearchClient {
   const definition = protoLoader.loadSync(
@@ -74,12 +75,17 @@ async function main(): Promise<void> {
       timings.push(Number(process.hrtime.bigint() - started) / 1_000_000);
     }
 
-    const average = timings.reduce((sum, duration) => sum + duration, 0) /
-      timings.length;
+    const average =
+      timings.reduce((sum, duration) => sum + duration, 0) / timings.length;
     const maximum = Math.max(...timings);
     console.log(
-      `${timings.length} gRPC searches: average ${average.toFixed(2)}ms, maximum ${maximum.toFixed(2)}ms`,
+      `${timings.length} gRPC searches: average ${average.toFixed(2)}ms, maximum ${maximum.toFixed(2)}ms (maximum target < ${RESPONSE_TIME_TARGET_MS}ms)`,
     );
+    if (maximum >= RESPONSE_TIME_TARGET_MS) {
+      throw new Error(
+        `Maximum search response time ${maximum.toFixed(2)}ms exceeded the ${RESPONSE_TIME_TARGET_MS}ms target`,
+      );
+    }
   } finally {
     client.close();
   }

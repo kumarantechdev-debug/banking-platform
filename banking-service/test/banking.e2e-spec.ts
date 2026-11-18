@@ -14,6 +14,20 @@ import { TransfersService } from '../src/transfers/transfers.service';
 import { AccountTransactionHistoryService } from '../src/transfers/account-transaction-history.service';
 
 interface BankingGrpcClient {
+  createTransfer(request: {
+    fromAccountId: number;
+    toAccountId: number;
+    amount: string;
+    idempotencyKey: string;
+  }): Observable<{
+    id: number;
+    fromAccountId: number;
+    toAccountId: number;
+    amount: string;
+    status: string;
+    referenceNumber: string;
+    createdAt: string;
+  }>;
   getAccount(request: { accountId: number }): Observable<{
     id: number;
     accountNumber: string;
@@ -82,6 +96,17 @@ describe('BankingService gRPC (e2e)', () => {
       ),
     };
     const transfersService = {
+      createTransfer: jest.fn().mockResolvedValue(
+        Object.assign(new Transfer(), {
+          id: 32,
+          fromAccountId: 21,
+          toAccountId: 22,
+          amount: '1.25',
+          status: TransferStatus.SUCCESS,
+          referenceNumber: 'TR-test-create',
+          createdAt: new Date('2026-01-02T03:04:05.000Z'),
+        }),
+      ),
       getTransfer: jest.fn().mockResolvedValue(
         Object.assign(new Transfer(), {
           id: 31,
@@ -162,6 +187,26 @@ describe('BankingService gRPC (e2e)', () => {
       amount: '1.25',
       status: 'SUCCESS',
       referenceNumber: 'TR-test-reference',
+    });
+  });
+
+  it('creates a transfer through CreateTransfer', async () => {
+    await expect(
+      firstValueFrom(
+        banking.createTransfer({
+          fromAccountId: 21,
+          toAccountId: 22,
+          amount: '1.25',
+          idempotencyKey: 'transfer-e2e-001',
+        }),
+      ),
+    ).resolves.toMatchObject({
+      id: 32,
+      fromAccountId: 21,
+      toAccountId: 22,
+      amount: '1.25',
+      status: 'SUCCESS',
+      referenceNumber: 'TR-test-create',
     });
   });
 

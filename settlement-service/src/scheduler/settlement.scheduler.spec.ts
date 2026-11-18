@@ -11,8 +11,15 @@ jest.mock('@nestjs/common', () => ({
 jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
 
 jest.mock('@nestjs/schedule', () => ({
-  Cron: () => () => undefined,
-  CronExpression: { EVERY_DAY_AT_1AM: '0 1 * * *' },
+  Cron: (expression: string, options: Record<string, unknown>) => {
+    return (target: object, propertyKey: string) => {
+      Reflect.set(Reflect.get(target, propertyKey), '__cronMetadata', {
+        expression,
+        options,
+      });
+    };
+  },
+  CronExpression: { EVERY_DAY_AT_1AM: '0 01 * * *' },
 }));
 
 jest.mock('@nestjs/microservices', () => ({
@@ -31,6 +38,7 @@ jest.mock('@nestjs/typeorm', () => ({ InjectRepository: () => () => undefined })
 import { SettlementScheduler } from './settlement.scheduler';
 import { SettlementTransactionStatus } from '../settlement-transaction/settlement-transaction.service';
 import { SettlementAuditLogService } from '../settlement-audit-log/settlement-audit-log.service';
+import { FailureReportService } from '../reports/failure-report.service';
 
 function createScheduler(
   transfers: Array<{ transferId: number; amount: number }>,
@@ -120,6 +128,18 @@ function createScheduler(
 }
 
 describe('SettlementScheduler', () => {
+  it('schedules the daily settlement at 01:00 Asia/Kolkata time', () => {
+    const handler = Reflect.get(
+      SettlementScheduler.prototype,
+      'handleDailySettlement',
+    );
+
+    expect(Reflect.get(handler, '__cronMetadata')).toEqual({
+      expression: '0 01 * * *',
+      options: { name: 'dailySettlement', timeZone: 'Asia/Kolkata' },
+    });
+  });
+
   it('processes the returned transfers in groups of 100 and updates job totals', async () => {
     const transfers = Array.from({ length: 101 }, (_, index) => ({ transferId: index + 1, amount: 10 }));
     const { scheduler, job, bankingClient } = createScheduler(transfers);
@@ -206,6 +226,25 @@ describe('SettlementScheduler', () => {
     expect(auditEvents).toContainEqual(
       expect.objectContaining({ action: 'JOB_COMPLETED', status: 'FAILED' }),
     );
+
+    const reportRepository = {
+      find: jest.fn(async ({ where }: { where: { jobId: number; status: string } }) =>
+        [...records.values()]
+          .filter(
+            (record) =>
+              record.jobId === where.jobId && record.status === where.status,
+          )
+          .map((record) => ({ ...record })),
+      ),
+    };
+    const reportService = new FailureReportService(reportRepository as never);
+    await expect(reportService.generateReport(17)).resolves.toMatchObject([
+      {
+        transferId: 99,
+        status: SettlementTransactionStatus.FAILED,
+        retryCount: 4,
+      },
+    ]);
   });
 
   it('does not retry financial processing when audit persistence fails', async () => {

@@ -58,7 +58,7 @@ async function executePipeline(
   }
 }
 
-async function seedCustomers(redis: Redis): Promise<number> {
+export async function seedCustomers(redis: Redis): Promise<number> {
   await redis.ping();
   await clearPreviousSeed(redis);
 
@@ -80,21 +80,13 @@ async function seedCustomers(redis: Redis): Promise<number> {
       ids.push(customer.id);
 
       pipeline.hset(hashKey, customer);
-      pipeline.zadd(
-        CUSTOMER_NAME_INDEX,
-        0,
-        `${normalizedName}|${customer.id}`,
-      );
+      pipeline.zadd(CUSTOMER_NAME_INDEX, 0, `${normalizedName}|${customer.id}`);
       pipeline.zadd(
         CUSTOMER_MOBILE_INDEX,
         0,
         `${normalizeSearchValue(customer.mobile)}|${customer.id}`,
       );
-      pipeline.zadd(
-        CUSTOMER_CITY_INDEX,
-        0,
-        `${normalizedCity}|${customer.id}`,
-      );
+      pipeline.zadd(CUSTOMER_CITY_INDEX, 0, `${normalizedCity}|${customer.id}`);
       pipeline.zadd(
         CUSTOMER_STATE_INDEX,
         0,
@@ -115,7 +107,9 @@ async function main(): Promise<void> {
   try {
     const inserted = await seedCustomers(redis);
     if (inserted !== CUSTOMER_COUNT) {
-      throw new Error(`Expected ${CUSTOMER_COUNT} records, inserted ${inserted}`);
+      throw new Error(
+        `Expected ${CUSTOMER_COUNT} records, inserted ${inserted}`,
+      );
     }
     console.log(`Successfully inserted ${inserted} customer records.`);
   } finally {
@@ -127,10 +121,12 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((error: unknown) => {
-  console.error(
-    'Customer seed failed:',
-    error instanceof Error ? error.message : String(error),
-  );
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(
+      'Customer seed failed:',
+      error instanceof Error ? error.message : String(error),
+    );
+    process.exitCode = 1;
+  });
+}

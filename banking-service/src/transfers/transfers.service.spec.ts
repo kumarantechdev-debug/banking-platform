@@ -545,6 +545,76 @@ describe('TransfersService', () => {
     expect(context.committedAudits).toHaveLength(0);
   });
 
+  it('serializes competing transfers so they cannot overdraw a shared source account', async () => {
+    const source = makeAccount(9, '10.05');
+    const destination = makeAccount(3, '2.10');
+    const context = createService([source, destination]);
+    const executeTransaction = context.dataSource.transaction;
+    let transactionTail = Promise.resolve();
+
+    context.dataSource.transaction = jest.fn(
+      async (
+        isolation: string,
+        callback: (manager: EntityManager) => Promise<unknown>,
+      ) => {
+        const previousTransaction = transactionTail;
+        let releaseTransaction: () => void = () => undefined;
+        transactionTail = new Promise<void>((resolve) => {
+          releaseTransaction = resolve;
+        });
+        await previousTransaction;
+        try {
+          return await executeTransaction(isolation, callback);
+        } finally {
+          releaseTransaction();
+        }
+      },
+    );
+
+    const outcomes = await Promise.all([
+      context.service
+        .createTransfer({
+          ...request,
+          amount: '6.00',
+          idempotencyKey: 'transfer-concurrent-1',
+        })
+        .then(
+          (transfer) => ({ transfer }),
+          (error: unknown) => ({ error }),
+        ),
+      context.service
+        .createTransfer({
+          ...request,
+          amount: '6.00',
+          idempotencyKey: 'transfer-concurrent-2',
+        })
+        .then(
+          (transfer) => ({ transfer }),
+          (error: unknown) => ({ error }),
+        ),
+    ]);
+
+    expect(outcomes.filter((outcome) => 'transfer' in outcome)).toHaveLength(1);
+    expect(outcomes.filter((outcome) => 'error' in outcome)).toHaveLength(1);
+    const rejected = outcomes.find((outcome) => 'error' in outcome);
+    const error = rejected && 'error' in rejected ? rejected.error : undefined;
+    expect(error).toBeInstanceOf(RpcException);
+    if (error instanceof RpcException) {
+      expect(error.getError()).toMatchObject({
+        code: status.FAILED_PRECONDITION,
+      });
+    }
+    expect(source.balance).toBe('4.05');
+    expect(destination.balance).toBe('8.10');
+    expect(context.committedTransfers).toHaveLength(1);
+    expect(context.committedLedgerEntries).toHaveLength(2);
+    expect(context.lockOptions).toMatchObject({
+      mode: 'pessimistic_write',
+      accountIds: [3, 9],
+      order: ['account.id', 'ASC'],
+    });
+  });
+
   it('allows retrying a failed transfer with the same key after the failure is resolved', async () => {
     const source = makeAccount(9, '0.05');
     const destination = makeAccount(3, '2.10');
@@ -699,7 +769,10 @@ describe('TransfersService', () => {
     ).resolves.toMatchObject({ success: true });
     await expect(
       context.service.updateTransferSettlementStatus(input),
-    ).resolves.toMatchObject({ success: true, message: 'Transfer is already settled.' });
+    ).resolves.toMatchObject({
+      success: true,
+      message: 'Transfer is already settled.',
+    });
     expect(transfer.settlementStatus).toBe(TransferSettlementStatus.SETTLED);
   });
 
