@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package banking;
+
+service BankingService {
+  rpc CreateAccount (CreateAccountRequest) returns (AccountResponse);
+  rpc GetAccount (GetAccountRequest) returns (AccountResponse);
+  rpc CreateTransfer (CreateTransferRequest) returns (TransferResponse);
+  rpc GetTransfer (GetTransferRequest) returns (TransferResponse);
+  rpc GetAccountTransactionHistory (GetAccountTransactionHistoryRequest) returns (GetAccountTransactionHistoryResponse);
+  rpc GetPendingTransfers (GetPendingTransfersRequest) returns (GetPendingTransfersResponse);
+  rpc UpdateTransferSettlementStatus (UpdateTransferSettlementStatusRequest) returns (UpdateTransferSettlementStatusResponse);
+}
+
+message CreateAccountRequest {
+  int32 customerId = 1;
+  string initialBalance = 2;
+}
+
+message GetAccountRequest {
+  int32 accountId = 1;
+}
+
+message CreateTransferRequest {
+  int32 fromAccountId = 1;
+  int32 toAccountId = 2;
+  string amount = 3;
+  string idempotencyKey = 4;
+}
+
+message GetTransferRequest {
+  int32 transferId = 1;
+}
+
+message GetPendingTransfersRequest {
+  int32 batchSize = 1;
+  string status = 2;
+  int32 afterTransferId = 3;
+}
+
+message GetPendingTransfersResponse {
+  repeated PendingTransfer transfers = 1;
+  int32 nextAfterTransferId = 2;
+}
+
+message PendingTransfer {
+  int32 transferId = 1;
+  string amount = 2;
+  string settlementStatus = 3;
+  string transferStatus = 4;
+}
+
+message UpdateTransferSettlementStatusRequest {
+  int32 transferId = 1;
+  string settlementStatus = 2;
+}
+
+message UpdateTransferSettlementStatusResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message AccountResponse {
+  int32 id = 1;
+  string accountNumber = 2;
+  int32 customerId = 3;
+  string balance = 4;
+  string status = 5;
+  string createdAt = 6;
+}
+
+message TransferResponse {
+  int32 id = 1;
+  int32 fromAccountId = 2;
+  int32 toAccountId = 3;
+  string amount = 4;
+  string status = 5;
+  string referenceNumber = 6;
+  string createdAt = 7;
+}
+
+message GetAccountTransactionHistoryRequest {
+  int32 accountId = 1;
+  string fromDate = 2;
+  string toDate = 3;
+  int32 page = 4;
+  int32 limit = 5;
+  string snapshotAt = 6;
+}
+
+message AccountHistoryTransaction {
+  int32 transferId = 1;
+  string referenceNumber = 2;
+  string transactionDate = 3;
+  string transactionType = 4;
+  string amount = 5;
+  string description = 6;
+  bool isAccountOpening = 7;
+}
+
+message GetAccountTransactionHistoryResponse {
+  repeated AccountHistoryTransaction transactions = 1;
+  string openingBalance = 2;
+  string closingBalance = 3;
+  int32 total = 4;
+  int32 page = 5;
+  int32 limit = 6;
+  int32 totalPages = 7;
+  string snapshotAt = 8;
+}

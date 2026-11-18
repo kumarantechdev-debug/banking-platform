@@ -1,0 +1,82 @@
+syntax = "proto3";
+package settlement;
+
+service SettlementService {
+  rpc CreateSettlement (CreateSettlementRequest) returns (CreateSettlementResponse);
+  rpc ProcessSettlement (ProcessSettlementRequest) returns (ProcessSettlementResponse);
+  rpc GetSettlementJob (GetSettlementJobRequest) returns (GetSettlementJobResponse);
+  rpc GetSettlementTransactions (GetSettlementTransactionsRequest) returns (GetSettlementTransactionsResponse);
+  rpc GetSettlementReport (GetSettlementReportRequest) returns (GetSettlementReportResponse);
+}
+
+message CreateSettlementRequest {
+  string jobDate = 1;
+}
+
+message CreateSettlementResponse {
+  int32 jobId = 1;
+  string jobDate = 2;
+  string status = 3;
+  string message = 4;
+}
+
+message ProcessSettlementRequest {
+  int32 jobId = 1;
+}
+
+message ProcessSettlementResponse {
+  SettlementJob job = 1;
+}
+
+message GetSettlementJobRequest {
+  int32 jobId = 1;
+}
+
+message GetSettlementJobResponse {
+  SettlementJob job = 1;
+}
+
+message GetSettlementTransactionsRequest {
+  int32 jobId = 1;
+  optional int32 transferId = 2;
+  optional string status = 3;
+  optional int32 limit = 4;
+}
+
+message GetSettlementTransactionsResponse {
+  repeated SettlementTransaction transactions = 1;
+}
+
+message GetSettlementReportRequest {
+  int32 jobId = 1;
+}
+
+message GetSettlementReportResponse {
+  SettlementJob job = 1;
+  repeated SettlementTransaction transactions = 2;
+}
+
+message SettlementTransaction {
+  int32 id = 1;
+  int32 transferId = 2;
+  string amount = 3;
+  string status = 4;
+  int32 retryCount = 5;
+  string errorMessage = 6;
+  string nextRetryAt = 7;
+  string processedAt = 8;
+  string createdAt = 9;
+  string updatedAt = 10;
+}
+
+message SettlementJob {
+  int32 id = 1;
+  string jobDate = 2;
+  string status = 3;
+  int32 totalTransactions = 4;
+  int32 successfulTransactions = 5;
+  int32 failedTransactions = 6;
+  string startedAt = 7;
+  string completedAt = 8;
+  string createdAt = 9;
+}

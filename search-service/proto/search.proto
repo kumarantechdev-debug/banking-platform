@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package search;
+
+service SearchService {
+  rpc SearchCustomers (SearchCustomersRequest) returns (SearchCustomersResponse);
+}
+
+message SearchCustomersRequest {
+  string q = 1;
+  optional int32 limit = 2;
+}
+
+message Customer {
+  string id = 1;
+  string name = 2;
+  string city = 3;
+  string state = 4;
+  string mobile = 5;
+  string status = 6;
+}
+
+message SearchCustomersResponse {
+  repeated Customer customers = 1;
+  int32 total = 2;
+}

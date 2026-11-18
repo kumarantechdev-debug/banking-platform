@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package statement;
+
+message Empty {}
+
+message GenerateStatementRequest {
+  int32 accountId = 1;
+  string fromDate = 2;
+  string toDate = 3;
+}
+
+message StatementTransaction {
+  int32 id = 1;
+  int32 statementId = 2;
+  int32 transferId = 3;
+  string transactionDate = 4;
+  string transactionType = 5;
+  string amount = 6;
+  string description = 7;
+  string balanceAfter = 8;
+  bool isAccountOpening = 9;
+}
+
+message Statement {
+  int32 id = 1;
+  int32 accountId = 2;
+  string fromDate = 3;
+  string toDate = 4;
+  string openingBalance = 5;
+  string closingBalance = 6;
+  string generatedAt = 7;
+  string status = 8;
+  repeated StatementTransaction transactions = 9;
+}
+
+message GenerateStatementResponse {
+  Statement statement = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message GetStatementRequest {
+  int32 statementId = 1;
+}
+
+message GetStatementResponse {
+  Statement statement = 1;
+  bool found = 2;
+}
+
+message GetStatementByIdWithTransactionsRequest {
+  int32 statementId = 1;
+  optional string transactionType = 2;
+  int32 page = 3;
+  int32 limit = 4;
+  bool paginate = 5;
+  optional string fromDate = 6;
+  optional string toDate = 7;
+}
+
+message GetStatementByIdWithTransactionsResponse {
+  Statement statement = 1;
+  bool found = 2;
+  int32 total = 3;
+  int32 page = 4;
+  int32 limit = 5;
+  int32 totalPages = 6;
+}
+
+message GetStatementTransactionsRequest {
+  int32 accountId = 1;
+  string fromDate = 2;
+  string toDate = 3;
+  optional string transactionType = 4;
+  int32 page = 5;
+  int32 limit = 6;
+}
+
+message GetStatementTransactionsResponse {
+  repeated StatementTransaction transactions = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 limit = 4;
+  int32 totalPages = 5;
+}
+
+message ExportStatementFileRequest {
+  int32 statementId = 1;
+}
+
+message ExportStatementFileResponse {
+  string fileName = 1;
+  string contentType = 2;
+  bytes content = 3;
+}
+
+service StatementService {
+  rpc GenerateStatement (GenerateStatementRequest) returns (GenerateStatementResponse);
+  rpc GetStatement (GetStatementRequest) returns (GetStatementResponse);
+  rpc GetStatementByIdWithTransactions (GetStatementByIdWithTransactionsRequest) returns (GetStatementByIdWithTransactionsResponse);
+  rpc GetStatementTransactions (GetStatementTransactionsRequest) returns (GetStatementTransactionsResponse);
+  rpc ExportStatementCsv (ExportStatementFileRequest) returns (ExportStatementFileResponse);
+  rpc ExportStatementPdf (ExportStatementFileRequest) returns (ExportStatementFileResponse);
+}
