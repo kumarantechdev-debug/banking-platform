@@ -54,41 +54,6 @@ Customer Service. Statement Service reads accounts and transaction history
 from Banking Service. Settlement Service reads pending transfers and updates
 their settlement status through Banking Service.
 
-## 5. Architecture Diagram
-
-```mermaid
-flowchart LR
-    Client[Web client or API consumer]
-    Gateway[Banking API Gateway<br/>REST / HTTP]
-    Customer[Customer Service<br/>gRPC]
-    Banking[Banking Service<br/>gRPC]
-    Search[Search Service<br/>gRPC]
-    Statement[Statement Service<br/>gRPC]
-    Settlement[Settlement Service<br/>gRPC]
-
-    CustomerDB[(customer_db<br/>MySQL)]
-    BankingDB[(banking_db<br/>MySQL)]
-    StatementDB[(statement_db<br/>MySQL)]
-    SettlementDB[(settlement_db<br/>MySQL)]
-    Redis[(Redis<br/>customer search indexes)]
-
-    Client -->|REST + JWT cookie| Gateway
-    Gateway -->|gRPC| Customer
-    Gateway -->|gRPC| Banking
-    Gateway -->|gRPC| Search
-    Gateway -->|gRPC| Statement
-    Gateway -->|gRPC| Settlement
-
-    Customer --> CustomerDB
-    Banking --> BankingDB
-    Banking -->|customer validation| Customer
-    Search --> Redis
-    Statement --> StatementDB
-    Statement -->|account and transaction history| Banking
-    Settlement --> SettlementDB
-    Settlement -->|pending transfers and settlement status| Banking
-```
-
 ## 6. Description of Each Microservice
 
 | Project | Responsibility |
