@@ -7,6 +7,8 @@ import { AppService } from './app.service';
 import { StatementModule } from './statement/statement.module';
 import { Statement } from './database/entities/statement.entity';
 import { StatementTransaction } from './database/entities/statement-transaction.entity';
+import { InitialSchema1710000000000 } from './database/migrations/1710000000000-InitialSchema';
+import { AddAccountOpeningTransactions1720000000000 } from './database/migrations/1720000000000-AddAccountOpeningTransactions';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -27,7 +29,10 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
         password: configService.get<string>('DB_PASSWORD', ''),
         database: configService.get<string>('DB_DATABASE', 'statement_db'),
         entities: [Statement, StatementTransaction],
-        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+        migrations: [
+          InitialSchema1710000000000,
+          AddAccountOpeningTransactions1720000000000,
+        ],
         synchronize: false,
         logging: false,
         extra: {

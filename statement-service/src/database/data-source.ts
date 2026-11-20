@@ -2,6 +2,8 @@ import 'dotenv/config';
 import { DataSource } from 'typeorm';
 import { Statement } from './entities/statement.entity';
 import { StatementTransaction } from './entities/statement-transaction.entity';
+import { InitialSchema1710000000000 } from './migrations/1710000000000-InitialSchema';
+import { AddAccountOpeningTransactions1720000000000 } from './migrations/1720000000000-AddAccountOpeningTransactions';
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -11,7 +13,10 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD ?? '',
   database: process.env.DB_DATABASE ?? 'statement_db',
   entities: [Statement, StatementTransaction],
-  migrations: [__dirname + '/migrations/*{.ts,.js}'],
+  migrations: [
+    InitialSchema1710000000000,
+    AddAccountOpeningTransactions1720000000000,
+  ],
   synchronize: false,
   migrationsRun: false,
   logging: false,

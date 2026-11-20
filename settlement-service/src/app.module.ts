@@ -12,6 +12,9 @@ import { SettlementTransactionModule } from './settlement-transaction/settlement
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { SettlementAuditLog } from './settlement-audit-log/entities/settlement-audit-log.entity';
 import { ReportsModule } from './reports/reports.module';
+import { SettlementJobs1710000000000 } from './database/migrations/1710000000000-SettlementJobs';
+import { SettlementTransactions1710000000001 } from './database/migrations/1710000000001-SettlementTransactions';
+import { SettlementAuditLogs1710000000002 } from './database/migrations/1710000000002-SettlementAuditLogs';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -31,6 +34,11 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
         password: configService.get<string>('DB_PASSWORD', ''),
         database: configService.get<string>('DB_DATABASE', 'settlement_db'),
         entities: [SettlementJob, SettlementTransaction, SettlementAuditLog],
+        migrations: [
+          SettlementJobs1710000000000,
+          SettlementTransactions1710000000001,
+          SettlementAuditLogs1710000000002,
+        ],
         synchronize: false,
         migrationsRun: false,
         logging: false,
