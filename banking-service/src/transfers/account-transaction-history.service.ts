@@ -120,7 +120,19 @@ export class AccountTransactionHistoryService {
       request.snapshotAt ||
       (
         (await manager.query(
-          `SELECT DATE_FORMAT(NOW(6), '%Y-%m-%d %H:%i:%s.%f') AS snapshotAt`,
+          `SELECT DATE_FORMAT(
+             GREATEST(
+               NOW(6),
+               COALESCE(
+                 (SELECT MAX(effectiveAt)
+                  FROM account_balance_ledger
+                  WHERE accountId = ?),
+                 NOW(6)
+               )
+             ),
+             '%Y-%m-%d %H:%i:%s.%f'
+           ) AS snapshotAt`,
+          [request.accountId],
         )) as Array<{ snapshotAt: string }>
       )[0]?.snapshotAt;
     if (!snapshotAt) {
